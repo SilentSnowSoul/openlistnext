@@ -76,7 +76,9 @@ rawRouter.get("/*", async (c) => {
           .split(";")
           .map((s) => s.trim())
           .find((s) => s.startsWith("browser-password="))
-          ?.split("=").slice(1).join("=") || ""
+          ?.split("=")
+          .slice(1)
+          .join("=") || ""
       let cookiePwd = ""
       try {
         cookiePwd = cookiePwdRaw ? decodeURIComponent(cookiePwdRaw) : ""
@@ -143,7 +145,9 @@ rawRouter.get("/*", async (c) => {
           }
 
           if (fileItem && fileItem.raw_url) {
-            // WebDAV 等需要认证的驱动：强制使用代理模式，避免重定向导致认证丢失
+            // WebDAV 等需要认证的驱动：强制使用代理模式，避免重定向导致认证丢失。
+            // 链接附带 raw_url_headers 时必然不能 302（重定向传不了 header），
+            // alias 等转发驱动的底层存储名也不在外层 driver 里，按 headers 判定。
             const needsProxy =
               isProxy ||
               normDriver === "webdav" ||
@@ -151,7 +155,8 @@ rawRouter.get("/*", async (c) => {
               normDriver === "onedrive" ||
               normDriver === "onedriveapp" ||
               normDriver === "weiyun" ||
-              normDriver === "tencentweiyun"
+              normDriver === "tencentweiyun" ||
+              Object.keys(fileItem.raw_url_headers || {}).length > 0
             if (needsProxy) {
               console.log(
                 `[rawRouter] Proxying download for '${reqPath}' via ${resolved.storage.driver}`,
